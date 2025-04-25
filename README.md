@@ -31,3 +31,12 @@ This repository also contains the solution for Challenge 2 completed by Team 6 a
 - Exploratory data analysis and visual storytelling
 - Model development and performance evaluation
 - Summary of findings with actionable insights
+
+## DataViz
+This assignment, included as part of the Data Analytics with R course, focuses on improving the understanding of how to effectively tell a story with data. The project explores various visualization techniques to communicate insights clearly and persuasively using R.
+
+### 📂 Contents:
+- Exploratory visualizations tailored to specific questions
+- Storytelling through progressive data refinement
+- Use of themes, colors, and annotation to enhance readability
+- Narrative-driven visual output for presentation
