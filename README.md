@@ -14,6 +14,7 @@ This repository contains all assignments and projects completed for the subject 
 
 ## Challenge 1
 This repository contains the solution for Challenge 1 completed by Team 6 as part of the Data Analytics with R course. The project includes data cleaning, analysis, and visualization using R and related libraries like ggplot2 and dplyr.
+⚠️ Note: To replicate the analysis, make sure to use the dataframe provided in the repository under the name barcelona_listings
 
 ### 📂 Contents:
 - Data preprocessing and transformation
@@ -21,3 +22,13 @@ This repository contains the solution for Challenge 1 completed by Team 6 as par
 - Data visualization with ggplot2
 - Insights and conclusions
 - Feel free to explore the code
+
+## Challenge 2
+This repository also contains the solution for Challenge 2 completed by Team 6 as part of the Data Analytics with R course. This challenge involved more advanced analytical techniques and further data exploration, focusing on a structured, reproducible workflow in R using R Markdown.
+⚠️ Note: To replicate the analysis, make sure to use the dataframe provided in the repository under the name airbnb_clean
+
+### 📂 Contents:
+- Comprehensive data preprocessing and cleaning
+- Exploratory data analysis and visual storytelling
+- Model development and performance evaluation
+- Summary of findings with actionable insights
