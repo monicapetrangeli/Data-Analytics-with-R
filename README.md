@@ -34,6 +34,7 @@ This repository also contains the solution for Challenge 2 completed by Team 6 a
 
 ## DataViz
 This assignment, included as part of the Data Analytics with R course, focuses on improving the understanding of how to effectively tell a story with data. The project explores various visualization techniques to communicate insights clearly and persuasively using R.
+Final_plot.jpg is the final outcome of the DataViz assignment.
 ⚠️ Note: To replicate the visualizations and follow the narrative flow, please ensure you use the dataframe named 13_worldcup.RData as provided in the repository. 
 
 ### 📂 Contents:
