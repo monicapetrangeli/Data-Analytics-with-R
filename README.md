@@ -14,7 +14,6 @@ This repository contains all assignments and projects completed for the subject 
 
 ## Challenge 1
 This repository contains the solution for Challenge 1 completed by Team 6 as part of the Data Analytics with R course. The project includes data cleaning, analysis, and visualization using R and related libraries like ggplot2 and dplyr.
-⚠️ Note: To replicate the analysis, make sure to use the dataframe provided in the repository under the name barcelona_listings
 
 ### 📂 Contents:
 - Data preprocessing and transformation
