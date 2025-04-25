@@ -24,7 +24,7 @@ This repository contains the solution for Challenge 1 completed by Team 6 as par
 
 ## Challenge 2
 This repository also contains the solution for Challenge 2 completed by Team 6 as part of the Data Analytics with R course. This challenge involved more advanced analytical techniques and further data exploration, focusing on a structured, reproducible workflow in R using R Markdown.
-⚠️ Note: To replicate the analysis, make sure to use the dataframe provided in the repository under the name airbnb_clean
+⚠️ Note: To replicate the analysis, make sure to use the dataframe provided in the repository under the name airbnb_clean.csv
 
 ### 📂 Contents:
 - Comprehensive data preprocessing and cleaning
@@ -34,6 +34,7 @@ This repository also contains the solution for Challenge 2 completed by Team 6 a
 
 ## DataViz
 This assignment, included as part of the Data Analytics with R course, focuses on improving the understanding of how to effectively tell a story with data. The project explores various visualization techniques to communicate insights clearly and persuasively using R.
+⚠️ Note: To replicate the visualizations and follow the narrative flow, please ensure you use the dataframe named 13_worldcup.RData as provided in the repository. 
 
 ### 📂 Contents:
 - Exploratory visualizations tailored to specific questions
