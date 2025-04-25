@@ -41,3 +41,13 @@ This assignment, included as part of the Data Analytics with R course, focuses o
 - Storytelling through progressive data refinement
 - Use of themes, colors, and annotation to enhance readability
 - Narrative-driven visual output for presentation
+
+## Amazon Customer Behavior Analysis App
+This project involves an interactive Shiny web application that analyzes and segments Amazon customers based on their behavior. It applies clustering techniques and rich visual storytelling to reveal actionable insights from survey data.
+⚠️ Note: The dataset used is based on Amazon customer behavior and is loaded under the name Amazon Customer Behavior Survey.csv.
+
+### 📂 Contents:
+- Data preprocessing and feature engineering
+- K-means clustering with optimal cluster determination (Elbow method)
+- Interactive plots: demographic distribution, hourly purchasing patterns, category preferences, and behavioral metrics
+- Dynamic cluster exploration via UI controls
