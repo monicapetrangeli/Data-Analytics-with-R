@@ -1,0 +1,418 @@
+---
+
+---
+title: "DataViz Club"
+format: html
+editor: visual
+---
+
+### Loading the required libraries.
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(corrplot)
+library(ggpubr)
+library(lubridate)
+library(ggthemes)
+library(ggrepel)
+library(scales)
+library(grid)
+library(gridExtra)
+library(forcats)
+library(ggtext)
+library(stringr)
+library(patchwork)
+library(gridExtra)
+library(grid)
+library(patchwork)
+library(cowplot)
+```
+
+### Loading the datasets.
+
+```{r}
+load('./13_worldcup.Rdata')
+
+matches <- worldcup[[1]]
+worldcups <- worldcup[[2]]
+```
+
+### Visualizing an overview of the data sets.
+
+The function glimpse is used to easily visualize the features and values of the data sets.
+
+```{r}
+glimpse(worldcups)
+```
+
+```{r}
+glimpse(matches)
+```
+
+Visualzing the features' names of the data sets for future reference when creating the graphs
+
+```{r}
+colnames(matches)
+```
+
+```{r}
+colnames(worldcups)
+```
+
+### Imputing missing values
+
+For the data set matches, when the feature win_conditions is found empty it means that no conditions applied, therefore we decided to impute the string 'Normal' to those missing values
+
+```{r}
+matches$win_conditions[is.na(matches$win_conditions)] <- "Normal"
+print(head(matches$win_conditions,20))
+```
+
+For the winning and losing team feature if found empty we assume that the game ended with a draw, therefore having no winning or losing teams. We decided to impute missing values in those columns with the string 'Draw'.
+
+```{r}
+matches$winning_team[is.na(matches$winning_team)] <- "Draw"
+matches$losing_team[is.na(matches$losing_team)] <- "Draw"
+```
+
+### Cleaning Features
+
+The string features will be cleaned and processed to ensure a consistent structure and allow for better visualizations.
+
+```{r}
+#Trimming blank spaces at the beginning or end of the string
+worldcups <- worldcups %>%
+  mutate(across(where(is.character), ~ str_trim(.)))
+
+matches <- matches %>%
+  mutate(across(where(is.character), ~ str_trim(.)))
+```
+
+In the data set matches the feature stage has some incongruities.
+
+```{r}
+print(unique(matches$stage))
+
+#Mutating Final Round to Final
+matches$stage[matches$stage == "Final Round"] <- "Final"
+print(unique(matches$stage))
+```
+
+### Feature Engineering
+
+Converting the date feature on the data set matches into date type to better utilize it during data visualization.
+
+```{r}
+# Convert date column to Date type
+matches$date <- as.Date(matches$date)
+```
+
+We decided to differentiate the teams in east, west or neutral based on their alignment during the Cold War.
+
+```{r}
+east_countries <- c(
+  "Soviet Union", "East Germany", "Czechoslovakia", "Poland", "Hungary", 
+  "Bulgaria", "Romania", "North Korea", "Cuba", "China PR", "Yugoslavia")
+
+west_countries <- c(
+  "United States", "England", "France", "West Germany", "Italy", "Netherlands", 
+  "Belgium", "Spain", "Sweden", "Norway", "Canada", "Australia", "Israel", 
+  "South Korea", "Greece", "Portugal", "New Zealand", "Denmark", 
+  "Republic of Ireland", "Brazil", "Argentina", "Mexico", "Colombia", 
+  "Japan", "South Africa")
+
+# Create new dataset with Cold War alignment
+matches_cold_war <- matches %>%
+  select(date, home_team, away_team,winning_team,home_score,away_score) %>%
+  mutate(
+    home_alignment = case_when(
+      home_team %in% east_countries ~ "East",
+      home_team %in% west_countries ~ "West",
+      TRUE ~ "Neutral"
+    ),
+    away_alignment = case_when(
+      away_team %in% east_countries ~ "East",
+      away_team %in% west_countries ~ "West",
+      TRUE ~ "Neutral"
+  )
+  )
+
+east_vs_west <- matches_cold_war %>% 
+  filter((home_alignment == "East" & away_alignment == "West") |
+         (home_alignment == "West" & away_alignment == "East"))
+```
+
+### Visualization
+
+#### Graph 1
+
+Graphing the average goals per game over each 15 years period range for countries both in th eeast, west and neutral. Showcasing the top 5 performing teams per each year range.
+
+```{r}
+#Combining the home goals and away goals grouped by team and year to calculate the everage goals per match for each team over each 15 year range.
+
+home_goals<-matches%>%
+  group_by(year,home_team)%>%
+  summarise(goals=sum(home_score), .groups = 'drop')
+
+away_goals<-matches%>%
+  group_by(year,away_team)%>%
+  summarise(goals=sum(away_score), .groups = 'drop')
+
+average_goals <- full_join(home_goals, away_goals,
+                           by = c('year' = 'year', 'home_team' = 'away_team')) %>%
+  mutate(
+    total_goals = coalesce(goals.x, 0) + coalesce(goals.y, 0),
+    matches_played = (!is.na(goals.x)) + (!is.na(goals.y))
+  ) %>%
+  mutate(avg_goals = total_goals / matches_played) %>%
+  select(year, team = home_team, avg_goals) %>%
+  filter(!is.na(team))
+
+#Implementing the 15 years range within the data
+average_goals_range <- average_goals %>%
+  mutate(year_range = paste0((year %/% 15) * 15, "-", ((year %/% 15) * 15) + 14)) %>%
+  group_by(year_range, team) %>%
+  summarise(avg_goals = mean(avg_goals, na.rm = TRUE), .groups = 'drop')
+
+#Defining each team's alignment to correctly color the data inputs of the graph
+average_goals_range <- average_goals_range %>%
+  mutate(alignment = case_when(
+    team %in% east_countries ~ "East",
+    team %in% west_countries ~ "West",
+    TRUE ~ "Neutral"
+  ))
+
+#Filtering the top 5 performing teams based on avg_goals for each 15 year range.
+top_5_teams <- average_goals_range %>%
+  group_by(year_range) %>%
+  slice_max(order_by = avg_goals, n = 5) %>%
+  ungroup()
+
+#Defining colors based on the team alignment. They will be used throughout the visualizations to maintain consistency.
+alignment_colors <- c(
+  "East" = "#E41A1C",
+  "West" = "#377EB8",
+  "Neutral" = "#4DAF4A"  
+)
+
+p1<-ggplot(average_goals_range, aes(x = team, y = year_range, size = avg_goals)) +
+  
+  #Adding a horizontal line for the audience to better flow along the same year range.
+  geom_hline(aes(yintercept = year_range), color = "gray70", linetype = "dashed") +
+  geom_point(aes(fill = alignment, color = alignment), shape = 21,
+             stroke = 0.7, alpha = 0.3) +
+  
+  #Highlighting the top 5 performing teams with a higher alpha for the audience's easier visualization of them
+  geom_point(data = top_5_teams, aes(fill = alignment, color = alignment), shape = 21, stroke = 0.7, alpha = 0.5) +
+  
+  #Labelling the top 5 performing teams as well as adding their average goals per match within the bubble.
+  geom_text_repel(data = top_5_teams, aes(label = team), size = 3,
+                  nudge_y = 0.5, direction = "y", box.padding = 0.6, 
+                  point.padding = 0.3, segment.size = 0.3) +
+  geom_segment(data = top_5_teams, aes(x = team, xend = team, y = year_range, yend = year_range),
+               color = "black", size = 0.5) +
+  geom_text(data = top_5_teams, aes(label = round(avg_goals, 2)), size = 3, color = "white") +
+  
+  scale_size_continuous(range = c(3, 15)) +
+  scale_color_manual(values = alignment_colors) +
+  scale_fill_manual(values = alignment_colors) +
+  
+  theme_minimal() +
+  theme(
+    text = element_text(family = 'serif'),
+    plot.subtitle = element_text(size = 15, face='bold',margin = margin(t = 10)),
+    plot.title = element_text(face = 'bold', size = 30),    #Utilizing the top graph's title as the overall title to the entire visualization
+    plot.caption = element_text(size=12),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    axis.text.y = element_text(size = 10, face = 'bold'),
+    strip.text = element_text(size = 12),
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank(),
+    legend.position = "left",
+    legend.margin = margin(0, 10, 0, 0)
+  ) +
+  labs(
+    title = "Cold War Team Performance",
+    subtitle="Average Goals per Match",
+    y = "Year Range",
+    size = "Avg Goals",
+    fill = "Team Alignment",
+    color = "Team Alignment" 
+  )
+print(p1)
+```
+
+Graphing a bar chart to showcase the top performing countries in terms of games winned within the Cold War (1954-1990).
+
+```{r}
+#Visualizing the number of winning matches by each team as a horizontal bar chart for the top 15 teams, filtered by year between 1954 and 1990
+team_wins <- matches %>%
+  filter(year >= 1954 & year <= 1990) %>% 
+  group_by(winning_team) %>%
+  summarise(winning_games = n()) %>%
+  filter(winning_team != 'Draw') %>%
+  filter(winning_games >= 5) %>%
+  mutate(alignment = case_when(
+    winning_team %in% east_countries ~ "East",
+    winning_team %in% west_countries ~ "West",
+    TRUE ~ "Neutral"
+  )) %>%
+  
+  #Filtering top 15 teams based on the number of winned games to better visualize and avoid overcrowding the plot.
+  top_n(15, winning_games)
+
+#Calculating the average number of matches won.
+avg_winning_games <- mean(team_wins$winning_games)
+
+#Plotting the horizontal bar chart with the average matches won as a vertical line
+p2<-ggplot(data = team_wins, aes(x = winning_games, y = reorder(winning_team, winning_games), fill = alignment)) +
+  geom_bar(stat = "identity", alpha = 0.5) +
+  geom_vline(xintercept = avg_winning_games, linetype = "dashed", color = "black", size = 0.2) +
+  
+  #Adding the number of won matches for each team next to its corresponding bar for a better understanding of the data and easier comparison among teams.
+  geom_text(aes(label = winning_games), hjust = -0.9, size = 4, color = "black", fontface = "italic", family = 'serif') +
+  
+  #Filling the bars with the color corresponding to the team's alignment
+  scale_fill_manual(values = alignment_colors, name = "Country Alignment") +
+  
+  labs(
+    title = 'Winning Matches (1954–1990)',
+    subtitle="Comparison of team wins during the Cold War era, colored by political alignment (East, West, Neutral),\n with an average performance benchmark.",
+    x = 'Number of Games Won'
+  ) +
+  
+  theme_minimal() +
+  theme(
+    text = element_text(family = 'serif'),
+    plot.subtitle = element_text(size = 12),
+    axis.text.x = element_text(size = 10),
+    axis.text.y = element_text(size = 10, face='bold'),
+    axis.title.x = element_text(size = 12),
+    axis.title.y = element_blank(),
+    plot.title = element_text(face = "bold", size = 15),
+    legend.position = "none", 
+    panel.grid = element_blank(),
+    caption.position = 'none' 
+  )
+
+print(p2)
+```
+
+Graphing via a line and area chart the difference in performance between East and West aligned countries during,before, and after the Cold War.
+
+```{r}
+teams_long <- matches %>%
+  select(year, home_team, home_score, away_team, away_score) %>%
+  pivot_longer(
+    cols = c(home_team, away_team, home_score, away_score),
+    names_to = c("side", ".value"),
+    names_pattern = "(home|away)_(.*)"
+  )
+
+#Classifying the teams into the east and west block using the previously defined alignment and excluding those with a neutral alignment
+teams_long <- teams_long %>%
+  mutate(bloc = case_when(
+    team %in% east_countries ~ "Eastern Bloc",
+    team %in% west_countries ~ "Western Bloc",
+    TRUE ~ NA_character_
+  ))
+
+teams_long_filtered <- teams_long %>% 
+  filter(!is.na(bloc))
+
+#Summarizing the performance (average goals per match) of each block by year
+pre_cold_war <- 1947
+cold_war_end <- 1991
+
+year_bloc_summary <- teams_long_filtered %>%
+  group_by(year, bloc) %>%
+  summarise(avg_goals = mean(score, na.rm = TRUE), .groups = "drop") %>% 
+  mutate(period = case_when(
+              year < pre_cold_war ~ "Pre-Cold War",
+              year >= pre_cold_war & year <= cold_war_end ~ "Cold War",
+              year > cold_war_end ~ "Post-Cold War"))
+
+#Pivoting to a wide format to be able to compute the difference between West's performance and East's one.
+year_wide <- year_bloc_summary %>%
+  pivot_wider(names_from = bloc, values_from = avg_goals) %>%
+  mutate(diff = `Western Bloc` - `Eastern Bloc`)
+
+#Plotting the graph
+#A positive value/area demonstrates a better performance by the West aligned teams compared to the East ones.
+#Setting the maximum and minimum values the y-axis can take as the max and min difference previously calculated.
+y_max <- max(year_wide$diff, na.rm = TRUE)
+y_min <- min(year_wide$diff, na.rm = TRUE)
+
+p3 <- ggplot(year_wide, aes(x = year, y = diff)) +
+  geom_line(color = "black", size = 1) +
+  geom_point(aes(color = diff > 0), size = 3) +
+  geom_area(aes(fill = diff > 0), alpha = 0.5) +
+  #Filling the area graph with the respective colors for the teams' alignment
+  scale_fill_manual(values = c("TRUE" = "#377EB8", "FALSE" = "#E41A1C"), guide = FALSE) +
+  scale_color_manual(values = c("TRUE" = "#377EB8", "FALSE" = "#E41A1C"), guide = FALSE) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  #Implementing vertical lines to distinguish the periods before, during and after Cold war
+  geom_vline(xintercept = pre_cold_war, linetype = "dashed", color = "gray40", alpha = 0.7) +
+  geom_vline(xintercept = cold_war_end, linetype = "dashed", color = "gray40", alpha = 0.7) +
+  #Annotating the period separations
+  annotate("text", x = 1930, y = y_max * 0.9, label = "Pre-Cold War", 
+           color = "gray30", fontface = "bold", size = 3.5, family='serif') +
+  annotate("text", x = 1970, y = y_max * 0.9, label = "Cold War Era", 
+           color = "gray30", fontface = "bold", size = 3.5, family='serif') +
+  annotate("text", x = 2005, y = y_max * 0.9, label = "Post-Cold War", 
+           color = "gray30", fontface = "bold", size = 3.5, family='serif') +
+  #Ensuring the x axis matches the period annotations
+  scale_x_continuous(limits = c(1930, 2005)) +
+  labs(
+    title = "Performance Gap Western vs Eastern",
+    subtitle = "Positive values indicate better performance by Western teams",
+    x = "World Cup Year",
+    y = "Difference in Avg Goals per Game"
+  ) +
+  theme_minimal() +
+  theme(
+    text=element_text(family='serif'),
+    plot.title = element_text(face = "bold", size = 15),
+    plot.subtitle = element_text(size = 12),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.title.x = element_blank()
+  )
+
+# Show the plot and the year-wide data
+print(p3)
+print(year_wide)
+```
+
+```{r}
+#Initiating a variable to add space between the bottom graphs to avoid their overlap and esnure a better visualization
+spacer <- ggplot() + theme_void()
+
+#Creating the bottom row with the combination of the second and third graph with the spacer in between
+bottom_row <- plot_grid(
+  p2, spacer, p3, 
+  ncol = 3, 
+  rel_widths = c(1, 0.01, 1),
+  align = "h"
+)
+
+#Combining the bottom row with the first plot at the top of it
+final_plot <- plot_grid(
+  p1, bottom_row, 
+  ncol = 1, 
+  rel_heights = c(1, 0.8)
+)
+
+print(final_plot)
+```
+
+```{r}
+ggsave('final_plot.jpg',plot = final_plot,width = 20, height = 11, dpi = 1000)
+```
